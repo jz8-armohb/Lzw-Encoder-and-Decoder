@@ -16,20 +16,22 @@ void InitialiseDict()	// Dictionary initialisation (initialise root node 0-255)
 	nextNode = 256;	// 下一个编码索引号为256
 }
 
-int InDict(int character, int stringCode)
+int InDict(int previous, int current)
 {
 	int sibling;
 
-	if (stringCode == -1)
+	if (previous == -1)
 	{
-		/* This character is the start of file, which means its root node must be in the dictionary, so return the ASCII code of character. */
-		return character;
+		/* This current character is the start of file, 
+		which means its root node must be in the dictionary, 
+		so return the ASCII code of character. */
+		return current;
 	}
 
-	sibling = dictionary[stringCode].firstChild;
+	sibling = dictionary[previous].firstChild;
 	while (sibling != -1)
 	{
-		if (character == dictionary[sibling].suffix)
+		if (current == dictionary[sibling].suffix)
 		{
 			return sibling;
 		}
@@ -40,8 +42,8 @@ int InDict(int character, int stringCode)
 
 void LzwEncoding(FILE* inFilePtr, FILE* outFilePtr)
 {
-	int character;
-	int stringCode;
+	int currentChar;	// C
+	int previousStr;	// P
 	int index;
 
 	/* Compute the size of file */
@@ -51,10 +53,25 @@ void LzwEncoding(FILE* inFilePtr, FILE* outFilePtr)
 
 	/* Initialise the dictionary and prefix */
 	InitialiseDict();
-	stringCode = -1;
+	previousStr = -1;	// Initialise the prefix
 
-	while ( (character = fgetc(inFilePtr)) != EOF )
+	while ( (currentChar = fgetc(inFilePtr)) != EOF )
 	{
-		index = InDict(character, stringCode);
+		index = InDict(previousStr, currentChar);
+		if (index >= 0)
+		{
+			/* PC is in the dictionary */
+			previousStr = index;	// 将PC对应的编码作为前缀
+		}
+		else
+		{
+			/* PC isn't in the dictionary */
+			fprintf(outFilePtr, "%s", previousStr);
+			if (nextNode < DICT_CAPACITY)
+			{
+				/* Enough space to add into the dictionary */
+
+			}
+		}
 	}
 }
