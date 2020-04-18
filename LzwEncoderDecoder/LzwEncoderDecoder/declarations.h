@@ -1,9 +1,8 @@
 #pragma once
-#define DICT_CAPACITY 512   // Capacity of the dictionary
+#define DICT_CAPACITY 65535   // Capacity of the dictionary
 
 /* Global variables */
-struct
-{
+struct {
     int suffix;     //后缀字符
     int parent, firstChild, nextSibling;
 } dictionary[DICT_CAPACITY + 1];  //数组下标即为编码

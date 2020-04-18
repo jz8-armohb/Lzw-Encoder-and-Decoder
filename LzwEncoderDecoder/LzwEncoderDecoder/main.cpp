@@ -2,8 +2,7 @@
 #include "declarations.h"
 using namespace std;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 	FILE* oriFilePtr = NULL;
 	FILE* cmprFilePtr = NULL;
 	FILE* decFilePtr = NULL;
@@ -12,30 +11,21 @@ int main(int argc, char* argv[])
 	const char* decFileName = argv[3];
 	 
 	/* Open the files */
-	if (fopen_s(&oriFilePtr, oriFileName, "rb") == 0)
-	{
+	if (fopen_s(&oriFilePtr, oriFileName, "rb") == 0) {
 		cout << "Successfully opened \"" << oriFileName << "\"." << endl;
-	}
-	else
-	{
+	} else {
 		cout << "Failed to open \"" << oriFileName << "\"." << endl;
 		exit(-1);
 	}
-	if (fopen_s(&cmprFilePtr, cmprFileName, "wb+") == 0)
-	{
+	if (fopen_s(&cmprFilePtr, cmprFileName, "wb+") == 0) {
 		cout << "Successfully opened \"" << cmprFileName << "\"." << endl;
-	}
-	else
-	{
+	} else {
 		cout << "Failed to open \"" << cmprFileName << "\"." << endl;
 		exit(-1);
 	}
-	if (fopen_s(&decFilePtr, decFileName, "wb") == 0)
-	{
+	if (fopen_s(&decFilePtr, decFileName, "wb") == 0) {
 		cout << "Successfully opened \"" << decFileName << "\"." << endl;
-	}
-	else
-	{
+	} else {
 		cout << "Failed to open \"" << decFileName << "\"." << endl;
 		exit(-1);
 	}
