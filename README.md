@@ -2,4 +2,4 @@
 
 ## v1.0
 
-- LZW encoder
+- Support LZW encoding for character strings
