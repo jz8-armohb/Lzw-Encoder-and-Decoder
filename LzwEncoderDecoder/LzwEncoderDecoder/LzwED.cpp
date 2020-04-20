@@ -130,9 +130,9 @@ void LzwDecoding(BITFILE* inBitFilePtr, FILE* outFilePtr) {
 		inFileSize = 0;
 	}
 
-	/* Initialisation */
+	/* Initialisation dictionary and pW*/
 	InitialiseDict();
-	lastCode = -1;	// Initialise pW
+	lastCode = -1;
 
 	while (inFileSize > 0) {
 		newCode = Input(inBitFilePtr);
