@@ -13,13 +13,13 @@ int decStack[DICT_CAPACITY];
 
 void InitialiseDict() {	// Dictionary initialisation (initialise root node 0-255)
 	for (int i = 0; i < 256; i++) {
-		dictionary[i].suffix = i;  // 根的后缀字符为对应ASCII码
-		dictionary[i].parent = -1;  // 前缀字符长度为0，没有前缀
-		dictionary[i].firstChild = -1;  // 暂时没有第一个孩子
-		dictionary[i].nextSibling = i + 1;	 /* 下一个兄弟根节点下标为下一个ASCII码值 */
+		dictionary[i].suffix = i;  // The suffix of each node is the corresponding ASCII code
+		dictionary[i].parent = -1;  // Temporarily doesn't have a parent node (i.e. prefix)
+		dictionary[i].firstChild = -1;  // Temporarily doesn't have any child nodes
+		dictionary[i].nextSibling = i + 1;	// The index of the next sibling root node is the next ASCII code
 	}
 
-	dictionary[255].nextSibling = -1;	// 最后一个根节点没有下一个兄弟
+	dictionary[255].nextSibling = -1;	// No next sibling for the last root node
 	nextNodeIdx = 256;	// The index of next dictionary entry
 }
 
@@ -31,14 +31,14 @@ int InDict(int P, int C) {
 		return C;
 	}
 
-	/* 自左向右遍历P节点的所有孩子（第一个孩子的所有兄弟） */
-	int sibling = dictionary[P].firstChild;	// 先以P的第一个孩子为长兄
+	/* Traverse all child node(s) of node P from left to right (i.e. all sibling nodes of the first child node) */
+	int sibling = dictionary[P].firstChild;	// Start from the first child of P
 	while (sibling > -1) {	// sibling == -1 indicates the end of sibling traversal
-		/* 若果找到一个兄弟的后缀是C，则返回PC的编码（该兄弟的下标） */
+		/* If a C-suffixed sibling is found, then return the code of PC (i.e. the index of this sibling) */
 		if (C == dictionary[sibling].suffix) {
 			return sibling;
 		}
-		/* 如果该兄弟的后缀不是该字符，则寻找下一兄弟 */
+		/* If the suffixes don't match, then look for the next */
 		sibling = dictionary[sibling].nextSibling;
 	}
 
@@ -58,8 +58,8 @@ void NewDictEntry(int P, int C) {
 	int pFirstChild = dictionary[P].firstChild;	// The first child of P
 	int pChild;
 
-	/* 设置新节点的兄弟关系 */
-	if (pFirstChild > -1) {	/* Parent of the new node originally have a child (children) */
+	/* Set up the new sibling-relation */
+	if (pFirstChild > -1) {	/* Parent of the new node originally have a child node */
 		pChild = pFirstChild;	// Start from the first child of P
 
 		/* Look for the youngest child of P (aka the last sibling) */
@@ -67,12 +67,23 @@ void NewDictEntry(int P, int C) {
 			pChild = dictionary[pChild].nextSibling;
 		}
 
-		dictionary[pChild].nextSibling = nextNodeIdx;	// 把新节点设为最后一个兄弟的下一个兄弟
+		dictionary[pChild].nextSibling = nextNodeIdx;	// Set the new node as the next sibling of the current last sibling
 	} else {	/* Parent of the new node originally doesn't have a child */
-		dictionary[P].firstChild = nextNodeIdx;	// 把新节点设置为PC（P的的第一个孩子）
+		dictionary[P].firstChild = nextNodeIdx;	// Set the new node as PC (i.e. the first child of P)
 	}
 
-	nextNodeIdx++;	// 下一个词条索引号+1
+	nextNodeIdx++;	//Index of the next entry + 1
+}
+
+int DecodeString(int start, int code) {
+	int count;
+	count = start;
+	while (code >= 0) {
+		decStack[count] = dictionary[code].suffix;
+		code = dictionary[code].parent;
+		count++;
+	}
+	return count;
 }
 
 void LzwEncoding(FILE* inFilePtr, BITFILE* outBitFilePtr) {
@@ -108,21 +119,38 @@ void LzwEncoding(FILE* inFilePtr, BITFILE* outBitFilePtr) {
 	Output(outBitFilePtr, previousStr);	// Output the last unencoded character(s)
 }
 
-//void LzwDecoding(FILE* inFilePtr, FILE* outFilePtr) {
-//	int character;
-//	int newCode, lastCode;
-//	int phraseLen;
-//
-//	unsigned long inFileSize = 9;	// 稍后改为从文件中读取
-//	if (inFileSize == -1) {
-//		inFileSize = 0;
-//	}
-//
-//	/* Initialisation */
-//	InitialiseDict();
-//	lastCode = -1;	// Initialise pW
-//
-//	while (inFileSize > 0) {
-//
-//	}
-//}
+void LzwDecoding(BITFILE* inBitFilePtr, FILE* outFilePtr) {
+	int character;
+	int newCode;	// cW
+	int lastCode;	// pW
+	int phraseLen;	// Length of phrase
+
+	unsigned long inFileSize = BitsInput(inBitFilePtr, 4 * 8);
+	if (inFileSize == -1) {
+		inFileSize = 0;
+	}
+
+	/* Initialisation */
+	InitialiseDict();
+	lastCode = -1;	// Initialise pW
+
+	while (inFileSize > 0) {
+		newCode = Input(inBitFilePtr);
+		if (newCode >= nextNodeIdx) {	/* Not in dictionary */
+			decStack[0] = character;
+			phraseLen = DecodeString(1, lastCode);
+		} else {
+			phraseLen = DecodeString(0, newCode);
+		}
+		character = decStack[phraseLen - 1];
+		while (phraseLen > 0) {
+			phraseLen--;
+			fputc(decStack[phraseLen], outFilePtr);
+			inFileSize--;
+		}
+		if (nextNodeIdx < DICT_CAPACITY) {	/* Add the new phrase into dictionary */
+			NewDictEntry(lastCode, character);
+		}
+		lastCode = newCode;
+	}
+}
