@@ -18,15 +18,18 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="LzwEncoding.cpp">
+    <ClCompile Include="BitIO.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="globalVar.cpp">
+    <ClCompile Include="LzwED.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="declarations.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BitIO.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,15 @@
 #include <iostream>
 #include "declarations.h"
+#include "BitIO.h"
 using namespace std;
+
+/* Global variables */
+int nextNodeIdx;
+int decStack[DICT_CAPACITY];
+
+/* Macros */
+#define Input(f) ((int)BitsInput(f, 16))
+#define Output(f, x) BitsOutput(f, (unsigned long)(x), 16)
 
 void InitialiseDict() {	// Dictionary initialisation (initialise root node 0-255)
 	for (int i = 0; i < 256; i++) {
@@ -11,7 +20,7 @@ void InitialiseDict() {	// Dictionary initialisation (initialise root node 0-255
 	}
 
 	dictionary[255].nextSibling = -1;	// 最后一个根节点没有下一个兄弟
-	nextNode = 256;	// The index of next dictionary entry
+	nextNodeIdx = 256;	// The index of next dictionary entry
 }
 
 int InDict(int P, int C) {
@@ -37,15 +46,15 @@ int InDict(int P, int C) {
 	return -1;
 }
 
-void AddIntoDict(int P, int C) {
+void NewDictEntry(int P, int C) {
 	if (P < 0) {
 		return;
 	}
 
-	dictionary[nextNode].suffix = C;
-	dictionary[nextNode].parent = P;
-	dictionary[nextNode].nextSibling = -1;	// Indicates that the node is the last sibling
-	dictionary[nextNode].firstChild = -1;	// Temporarily this node doesn't have a child
+	dictionary[nextNodeIdx].suffix = C;
+	dictionary[nextNodeIdx].parent = P;
+	dictionary[nextNodeIdx].nextSibling = -1;	// Indicates that the node is the last sibling
+	dictionary[nextNodeIdx].firstChild = -1;	// Temporarily this node doesn't have a child
 	int pFirstChild = dictionary[P].firstChild;	// The first child of P
 	int pChild;
 
@@ -58,42 +67,62 @@ void AddIntoDict(int P, int C) {
 			pChild = dictionary[pChild].nextSibling;
 		}
 
-		dictionary[pChild].nextSibling = nextNode;	// 把新节点设为最后一个兄弟的下一个兄弟
+		dictionary[pChild].nextSibling = nextNodeIdx;	// 把新节点设为最后一个兄弟的下一个兄弟
 	} else {	/* Parent of the new node originally doesn't have a child */
-		dictionary[P].firstChild = nextNode;	// 把新节点设置为PC（P的的第一个孩子）
+		dictionary[P].firstChild = nextNodeIdx;	// 把新节点设置为PC（P的的第一个孩子）
 	}
 
-	nextNode++;	// 下一个词条索引号+1
+	nextNodeIdx++;	// 下一个词条索引号+1
 }
 
-void LzwEncoding(FILE* inFilePtr, FILE* outFilePtr)
-{
+void LzwEncoding(FILE* inFilePtr, BITFILE* outBitFilePtr) {
 	int previousStr;	// P
 	int currentChar;	// C
 	int PC;	// P & C combined as 1 character
 
 	/* Compute the size of file */
-	//fseek(inFilePtr, 0, SEEK_END);
-	//int inFileSize = ftell(inFilePtr);
-	//fseek(inFilePtr, 0, SEEK_SET);
+	fseek(inFilePtr, 0, SEEK_END);
+	int inFileSize = ftell(inFilePtr);
+	fseek(inFilePtr, 0, SEEK_SET);
+	BitsOutput(outBitFilePtr, inFileSize, 4 * 8);
 
 	/* Initialise the dictionary and P */
 	InitialiseDict();
 	previousStr = -1;	// Initialise P
 
+	//fprintf(outFilePtr, "LZW-encoded string: ");
 	while ( (currentChar = fgetc(inFilePtr)) != EOF ) {
 		/* Check if PC is in the dictionary */
 		PC = InDict(previousStr, currentChar);
 		if (PC >= 0) {	/* PC is in the dictionary */
 			previousStr = PC;	// Set P = PC
 		} else {	/* PC isn't in the dictionary */
-			fprintf(outFilePtr, "%d ", previousStr);	// Output P
-			if (nextNode < DICT_CAPACITY) {	/* Enough space to add PC into the dictionary */
-				AddIntoDict(previousStr, currentChar);
+			Output(outBitFilePtr, previousStr);	// Output P
+			if (nextNodeIdx < DICT_CAPACITY) {	/* Enough space to add PC into the dictionary */
+				NewDictEntry(previousStr, currentChar);
 			}
 			previousStr = currentChar;	// Set P = C
 		}
 	}
 
-	fprintf(outFilePtr, "%d\n", previousStr);	// Output the last unencoded character(s)
+	Output(outBitFilePtr, previousStr);	// Output the last unencoded character(s)
 }
+
+//void LzwDecoding(FILE* inFilePtr, FILE* outFilePtr) {
+//	int character;
+//	int newCode, lastCode;
+//	int phraseLen;
+//
+//	unsigned long inFileSize = 9;	// 稍后改为从文件中读取
+//	if (inFileSize == -1) {
+//		inFileSize = 0;
+//	}
+//
+//	/* Initialisation */
+//	InitialiseDict();
+//	lastCode = -1;	// Initialise pW
+//
+//	while (inFileSize > 0) {
+//
+//	}
+//}

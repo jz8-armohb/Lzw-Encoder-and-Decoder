@@ -147,11 +147,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="globalVar.cpp" />
-    <ClCompile Include="LzwEncoding.cpp" />
+    <ClCompile Include="BitIO.cpp" />
+    <ClCompile Include="LzwED.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BitIO.h" />
     <ClInclude Include="declarations.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
