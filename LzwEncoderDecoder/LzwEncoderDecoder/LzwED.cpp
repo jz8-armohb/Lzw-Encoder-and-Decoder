@@ -75,17 +75,6 @@ void NewDictEntry(int P, int C) {
 	nextNodeIdx++;	//Index of the next entry + 1
 }
 
-int DecodeString(int start, int code) {
-	int count;
-	count = start;
-	while (code >= 0) {
-		decStack[count] = dictionary[code].suffix;
-		code = dictionary[code].parent;
-		count++;
-	}
-	return count;
-}
-
 void LzwEncoding(FILE* inFilePtr, BITFILE* outBitFilePtr) {
 	int previousStr;	// P
 	int currentChar;	// C
@@ -119,10 +108,21 @@ void LzwEncoding(FILE* inFilePtr, BITFILE* outBitFilePtr) {
 	Output(outBitFilePtr, previousStr);	// Output the last unencoded character(s)
 }
 
+int DecodeString(int start, int code) {
+	int count = start;
+	while (code >= 0) {
+		/* Look for the root node */
+		decStack[count] = dictionary[code].suffix;	// Store the original string in inverted order
+		code = dictionary[code].parent;	// Set the parent of the current node as the next node
+		count++;	// Points to the next node
+	}
+	return count;	// The distance between the current node and the root
+}
+
 void LzwDecoding(BITFILE* inBitFilePtr, FILE* outFilePtr) {
 	int character;
-	int newCode;	// cW
-	int lastCode;	// pW
+	int previousCode;	// pW
+	int currentCode;	// cW
 	int phraseLen;	// Length of phrase
 
 	unsigned long inFileSize = BitsInput(inBitFilePtr, 4 * 8);
@@ -130,27 +130,27 @@ void LzwDecoding(BITFILE* inBitFilePtr, FILE* outFilePtr) {
 		inFileSize = 0;
 	}
 
-	/* Initialisation dictionary and pW*/
+	/* Initialise dictionary and pW*/
 	InitialiseDict();
-	lastCode = -1;
+	previousCode = -1;
 
 	while (inFileSize > 0) {
-		newCode = Input(inBitFilePtr);
-		if (newCode >= nextNodeIdx) {	/* Not in dictionary */
-			decStack[0] = character;
-			phraseLen = DecodeString(1, lastCode);
-		} else {
-			phraseLen = DecodeString(0, newCode);
+		currentCode = Input(inBitFilePtr);
+		if (currentCode < nextNodeIdx) {	/* cW is in dictionary */
+			phraseLen = DecodeString(0, currentCode);	// The length of cW
+		} else {	/* When cW ¡Ý next node index, which means cW > current node index, cW isn't in dictionary */
+			decStack[0] = character;	// The last character in stack of the last loop, i.e. 1st character of pW
+			phraseLen = DecodeString(1, previousCode);	// The length of pW + 1
 		}
-		character = decStack[phraseLen - 1];
+		character = decStack[phraseLen - 1];	// The last character in the stack, i.e. the 1st character of pW or cW
 		while (phraseLen > 0) {
 			phraseLen--;
-			fputc(decStack[phraseLen], outFilePtr);
+			fputc(decStack[phraseLen], outFilePtr);	// Output the decoded string (in inverted order of decStack)
 			inFileSize--;
 		}
 		if (nextNodeIdx < DICT_CAPACITY) {	/* Add the new phrase into dictionary */
-			NewDictEntry(lastCode, character);
+			NewDictEntry(previousCode, character);	// Add "pW + 1st character of cW" or "pW + 1st character of pW" into dictionary
 		}
-		lastCode = newCode;
+		previousCode = currentCode;	// Set pW = cW
 	}
 }
