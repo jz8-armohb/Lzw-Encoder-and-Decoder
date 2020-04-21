@@ -143,6 +143,7 @@ void LzwDecoding(BITFILE* inBitFilePtr, FILE* outFilePtr) {
 			phraseLen = DecodeString(1, previousCode);	// The length of pW + 1
 		}
 		character = decStack[phraseLen - 1];	// The last character in the stack, i.e. the 1st character of pW or cW
+
 		while (phraseLen > 0) {
 			phraseLen--;
 			fputc(decStack[phraseLen], outFilePtr);	// Output the decoded string (in inverted order of decStack)
